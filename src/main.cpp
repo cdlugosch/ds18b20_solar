@@ -14,7 +14,7 @@ float batteryLevel    = 0.0;
 uint64_t Time_to_sleep = 300;   /* Time ESP32 will go to sleep (in seconds) */
 
 
-// Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
+// Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs) 
 OneWire oneWire(ONE_WIRE_BUS);
 // Pass our oneWire reference to Dallas Temperature. 
 DallasTemperature owSensors(&oneWire);
