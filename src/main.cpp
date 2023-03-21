@@ -14,8 +14,8 @@ int max_network_iteration = 2;
 int network_iteration_index = 0;
 int increase_sleep_at_low_voltage_factor = 1;
 
-float chartValue    = 0.0;
-float batteryLevel  = 0.0;
+float BatteryVoltage  = 0.0;
+float batteryLevel    = 0.0;
 
 
 WiFiClient espClient;
@@ -67,10 +67,10 @@ void connectNetwork(){
     case WL_DISCONNECTED: Serial.println("WL_DISCONNECTED"); break;
     case WL_NO_SHIELD: Serial.println("WL_NO_SHIELD"); break;
 
-    default: Serial.println("UNKNOWN WL STATUS:" + status); break;
+    default: Serial.println("UNKNOWN WL STATUS:" + WiFi.status()); break;
   }  
 
-  if(status == WL_CONNECTED){
+  if(WiFi.status() == WL_CONNECTED){
     mqttClient.setServer(mqttServer, mqttPort);
     
     network_iteration_index=0;
@@ -130,10 +130,10 @@ float get_ds18b20_Temp()
   return temperature;
 }
 
-double getVoltage(int pin)
+float getVoltage(int pin)
 {
   /* Read voltage a few times and return mean value, as a single read not accurate */
-  double batteryLevel = 0.0;
+  float batteryLevel = 0.0;
   int count = 0;
   boolean done = false;
   while(count<=100){
@@ -155,7 +155,7 @@ void setup()
   digitalWrite(sensor_pin, HIGH);
 
 
-  if(status == WL_CONNECTED && mqttClient.connected()){
+  if(WiFi.status() == WL_CONNECTED && mqttClient.connected()){
 
     /* Read Temperature from ds18b20 */
     char ds18b20_tempString[8];
@@ -172,24 +172,26 @@ void setup()
     Serial.print("Voltage : ");
     Serial.println(batteryLevel);
 
-    chartValue = map(batteryLevel,0,710,0,100);
-    chartValue = chartValue * 4.2/100*0.905;  // try to get the correct voltage, as voltage divider is a mess + multiply by 0.78
+    BatteryVoltage = map(batteryLevel,0,710,0,100);
+    BatteryVoltage = BatteryVoltage * 4.2/100*0.905;  // try to get the correct voltage, as voltage divider is a mess + multiply by 0.78
 
     /*increase sleep time in case battery voltage is low */
-    if(chartValue < 3.9)
+    if(BatteryVoltage < 3.9)
       increase_sleep_at_low_voltage_factor = 2;
       
-    if(chartValue < 3.7)
+    if(BatteryVoltage < 3.7)
       increase_sleep_at_low_voltage_factor = 3;
       
-    if(chartValue < 3.5)
+    if(BatteryVoltage < 3.5)
       increase_sleep_at_low_voltage_factor = 4;       
 
 
     char tempString[8];
-    dtostrf(chartValue, 1, 2, tempString);
+    dtostrf(BatteryVoltage, 1, 2, tempString);
     mqttClient.publish("esp/sensor/ds18b20_0_voltage", tempString);
 
+    /* Wait a little bit to make sure publish is finished*/
+    delay(3000);
     Serial.println("Done - activating deepsleep mode");
     Time_to_sleep = Time_to_sleep * increase_sleep_at_low_voltage_factor * uS_TO_S_FACTOR;
     esp_sleep_enable_timer_wakeup(Time_to_sleep);
