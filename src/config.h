@@ -1,6 +1,6 @@
 
 /* OUTSOURCED CREDENTIALS */
-/* WiFi */
+/* WiFi  */
 const char* ssid            = "Renoir";
 const char* WiFi_password   = "oyn4Feb9Om3yOb";
 
