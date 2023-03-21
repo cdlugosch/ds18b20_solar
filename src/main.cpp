@@ -154,6 +154,7 @@ void setup()
   pinMode(analog_voltage_pin, INPUT);
   digitalWrite(sensor_pin, HIGH);
 
+  connectNetwork();
 
   if(WiFi.status() == WL_CONNECTED && mqttClient.connected()){
 
