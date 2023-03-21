@@ -1,25 +1,9 @@
-#include <WiFi.h>
-#include <PubSubClient.h>
 #include <DallasTemperature.h>
 #include <OneWire.h>
- 
-const char* ssid        = "Renoir";
-const char* password    = "oyn4Feb9Om3yOb";
- 
-const char* mqttServer  = "10.120.40.25";
-const int mqttPort      = 1883;
-const char* mqttClientName  = "ESP32Client_Garden_Temperature_ds18b20";
-
-int max_network_iteration = 2;
-int network_iteration_index = 0;
-int increase_sleep_at_low_voltage_factor = 1;
+#include "myEspLib.h"
 
 float BatteryVoltage  = 0.0;
 float batteryLevel    = 0.0;
-
-
-WiFiClient espClient;
-PubSubClient mqttClient(espClient);
 
 # define ONE_WIRE_BUS 21
 # define sensor_pin 5
@@ -35,67 +19,7 @@ OneWire oneWire(ONE_WIRE_BUS);
 // Pass our oneWire reference to Dallas Temperature. 
 DallasTemperature owSensors(&oneWire);
 
-/* ############################ */
-void connectNetwork(){
 
-  // attempt to connect to Wifi network:
-  Serial.print("Attempting to connect to Wifi network, SSID: ");
-  Serial.println(ssid);
-  WiFi.mode(WIFI_STA);
- 
-  if(WiFi.status() != WL_CONNECTED){
-    WiFi.begin(ssid, password);
-  }  
-
-  while ((WiFi.status() != WL_CONNECTED) && (network_iteration_index < max_network_iteration)) {
-    Serial.print('.');
-    network_iteration_index += 1;
-    delay(500);    // wait a few seconds for connection:
-  }  
-  /* DEBUG MESSAGES */  
-  switch(WiFi.status()) {
-    case WL_IDLE_STATUS: Serial.println("WL_IDLE_STATUS"); break;
-    case WL_NO_SSID_AVAIL: Serial.println("WL_NO_SSID_AVAIL"); break;
-    case WL_SCAN_COMPLETED: Serial.println("WL_SCAN_COMPLETED"); break;
-    case WL_CONNECTED: 
-      Serial.println("WL_CONNECTED - Connected to the WiFi network");
-      Serial.println("IP address: ");
-      Serial.println(WiFi.localIP());      
-      break;
-    case WL_CONNECT_FAILED: Serial.println("WL_CONNECT_FAILED"); break;
-    case WL_CONNECTION_LOST: Serial.println("WL_CONNECTION_LOST"); break;
-    case WL_DISCONNECTED: Serial.println("WL_DISCONNECTED"); break;
-    case WL_NO_SHIELD: Serial.println("WL_NO_SHIELD"); break;
-
-    default: Serial.println("UNKNOWN WL STATUS:" + WiFi.status()); break;
-  }  
-
-  if(WiFi.status() == WL_CONNECTED){
-    mqttClient.setServer(mqttServer, mqttPort);
-    
-    network_iteration_index=0;
-
-    while ((!mqttClient.connected()) && (network_iteration_index < max_network_iteration)) {
-        Serial.println("Connecting to MQTT...");
-   
-        if (mqttClient.connect(mqttClientName, "", "" )) {
-   
-          Serial.println("MQTT connected");  
-          network_iteration_index+=max_network_iteration;
-
-        } else {
-   
-          Serial.print("MQTT failed with state ");
-          Serial.print(mqttClient.state());
-          Serial.print(".");
-          
-          delay(2000);
-   
-        }
-        network_iteration_index+=1;
-    }
-  }
-}
 /* ############################ */
 float get_ds18b20_Temp()
 {
