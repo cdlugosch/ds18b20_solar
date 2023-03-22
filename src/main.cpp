@@ -39,8 +39,8 @@ float get_ds18b20_Temp()
 
     while((count<50) && ((starttime +10000)>millis())){
       temperature = owSensors.getTempCByIndex(0);
-      /* sometimes the returned value is approx 85 or -127 - maybe the sensor is not fast enough */
-      if(temperature>-20 && temperature<70){
+      /* sometimes the returned value are not in a realistic range (for Central Europe 2023 ;) ) - simply drop them */
+      if(temperature>-30 && temperature<70){
         t += temperature;
         count+=1;
       }
@@ -69,7 +69,7 @@ float getVoltage(int pin)
   Voltage = adc_analogValue/count; 
   Voltage = Voltage/190;  /* measured multiplier based on real voltage divider */
 
-  if(Voltage <= 3.0) // Reading was a failure due to weak connectors - ESP does not work anymore at that voltage
+  if(Voltage <= 3.0 || Voltage > 4.5) // Reading was a failure due to weak connectors or reading - ESP does not work anymore at that voltage
     Voltage = 0.0;
 
  return Voltage; 
@@ -108,11 +108,12 @@ void setup()
     Serial.print("BatteryVoltage : ");
     Serial.println(BatteryVoltage);
 
-    if(BatteryVoltage>0){
+    if(BatteryVoltage>0.0){
       char BatteryVoltage_mqtt_payload[10];
       dtostrf(BatteryVoltage, 1, 2, BatteryVoltage_mqtt_payload);  
       mqttClient.publish("esp/sensor/ds18b20_0_voltage", BatteryVoltage_mqtt_payload);  
-    
+      mqttClient.publish("esp/sensor/ds18b20_0_voltage_read_error", "false");  
+
       /*increase sleep time in case battery voltage is low */
       if(BatteryVoltage < 3.9 && BatteryVoltage > 0)
         increase_sleep_at_low_voltage_factor = 2;
@@ -129,7 +130,7 @@ void setup()
     }else{
       mqttClient.publish("esp/sensor/ds18b20_0_voltage_read_error", "true");  
     }
-    
+
     /* Wait a little bit to make sure publish is finished*/
     delay(3000);
     Serial.println("Done - activating deepsleep mode");
