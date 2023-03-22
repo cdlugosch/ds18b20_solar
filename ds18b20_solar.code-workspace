@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "ds18b20_solar",
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"cmath": "cpp"
+		}
+	}
+}
