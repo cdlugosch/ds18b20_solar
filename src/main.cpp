@@ -124,7 +124,7 @@ void setup()
       if(BatteryVoltage < 3.5 && BatteryVoltage > 0)
         increase_sleep_at_low_voltage_factor = 4;       
 
-      if(BatteryVoltage < 3.3 && BatteryVoltage > 0) 
+      if(BatteryVoltage < 3.4 && BatteryVoltage > 0) 
         increase_sleep_at_low_voltage_factor = 6;  
     
     }else{
