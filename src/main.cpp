@@ -100,7 +100,8 @@ void setup()
     Serial.println(batteryLevel);
 
     BatteryVoltage = map(batteryLevel,0,710,0,100);
-    BatteryVoltage = BatteryVoltage * 4.2/100*0.905;  // try to get the correct voltage, as voltage divider is a mess + multiply by 0.78
+    //BatteryVoltage = BatteryVoltage * 4.2/100*0.905;  // try to get the correct voltage, as voltage divider is a mess + multiply by 0.78
+    BatteryVoltage = BatteryVoltage * 4.2/100;
 
     /*increase sleep time in case battery voltage is low */
     if(BatteryVoltage < 3.9)
