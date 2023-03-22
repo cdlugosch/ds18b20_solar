@@ -91,6 +91,7 @@ void setup()
     strncat(topic, "ds18b20_0",sizeof("ds18b20_0"));*/
     mqttClient.publish("esp/sensor/ds18b20_0", ds18b20_tempString);
  
+
     Serial.println("de-activate sensor to save battery ");
     digitalWrite(sensor_pin, LOW);
 
@@ -99,8 +100,13 @@ void setup()
     Serial.print("Voltage : ");
     Serial.println(batteryLevel);
 
-    BatteryVoltage = map(batteryLevel,0,710,0,100);
+    char tempString_batteryLevel[18];
+    dtostrf(BatteryVoltage, 1, 2, tempString_batteryLevel);    
+    mqttClient.publish("esp/sensor/ds18b20_0_batteryLevel", tempString_batteryLevel);
+
+    //BatteryVoltage = map(batteryLevel,0,710,0,100);
     //BatteryVoltage = BatteryVoltage * 4.2/100*0.905;  // try to get the correct voltage, as voltage divider is a mess + multiply by 0.78
+    BatteryVoltage = map(batteryLevel,0,7100,0,100);
     BatteryVoltage = BatteryVoltage * 4.2/100;
 
     /*increase sleep time in case battery voltage is low */
