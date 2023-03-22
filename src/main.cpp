@@ -3,7 +3,6 @@
 #include "myEspLib.h"
 
 float BatteryVoltage  = 0.0;
-float batteryLevel    = 0.0;
 
 # define ONE_WIRE_BUS 21
 # define sensor_pin 5
@@ -33,22 +32,22 @@ float get_ds18b20_Temp()
   float t = 0.0;
 
   unsigned long starttime = millis();
-  int index = 0;
+  int count = 0;
 
   if(CountSensors>0){
     owSensors.requestTemperatures(); // Send the command to get temperatures
 
-    while((index<50) && ((starttime +10000)>millis())){
+    while((count<50) && ((starttime +10000)>millis())){
       temperature = owSensors.getTempCByIndex(0);
       /* sometimes the returned value is approx 85 or -127 - maybe the sensor is not fast enough */
       if(temperature>-20 && temperature<70){
         t += temperature;
-        index+=1;
+        count+=1;
       }
     }
     if(index>0){
-      temperature = t/index;
-    }
+      temperature = t/count;
+    }else{}
   }
 
   return temperature;
@@ -57,14 +56,23 @@ float get_ds18b20_Temp()
 float getVoltage(int pin)
 {
   /* Read voltage a few times and return mean value, as a single read not accurate */
-  float batteryLevel = 0.0;
+  float adc_analogValue = 0.0;
+  float Voltage = 0.0;
+
   int count = 0;
-  boolean done = false;
-  while(count<=100){
-    batteryLevel += analogRead(pin);
+  while(count<=20){
+    adc_analogValue += analogRead(pin);
     count +=1;
+    delay(100);
   }
- return batteryLevel/count; 
+
+  Voltage = adc_analogValue/count; 
+  Voltage = Voltage/190;  /* measured multiplier based on real voltage divider */
+
+  if(Voltage <= 3.0) // Reading was a failure due to weak connectors - ESP does not work anymore at that voltage
+    Voltage = 0.0;
+
+ return Voltage; 
 }
   
 /* ############################ */
@@ -96,36 +104,32 @@ void setup()
     digitalWrite(sensor_pin, LOW);
 
     /* Voltage Monitor */
-    batteryLevel = getVoltage(analog_voltage_pin);
-    Serial.print("Voltage : ");
-    Serial.println(batteryLevel);
+    BatteryVoltage = getVoltage(analog_voltage_pin);
+    Serial.print("BatteryVoltage : ");
+    Serial.println(BatteryVoltage);
 
-    char tempString_batteryLevel[18];
-    dtostrf(BatteryVoltage, 1, 2, tempString_batteryLevel);    
-    mqttClient.publish("esp/sensor/ds18b20_0_batteryLevel", tempString_batteryLevel);
+    if(BatteryVoltage>0){
+      char BatteryVoltage_mqtt_payload[10];
+      dtostrf(BatteryVoltage, 1, 2, BatteryVoltage_mqtt_payload);  
+      mqttClient.publish("esp/sensor/ds18b20_0_voltage", BatteryVoltage_mqtt_payload);  
+    
+      /*increase sleep time in case battery voltage is low */
+      if(BatteryVoltage < 3.9 && BatteryVoltage > 0)
+        increase_sleep_at_low_voltage_factor = 2;
+        
+      if(BatteryVoltage < 3.7 && BatteryVoltage > 0)
+        increase_sleep_at_low_voltage_factor = 3;
+        
+      if(BatteryVoltage < 3.5 && BatteryVoltage > 0)
+        increase_sleep_at_low_voltage_factor = 4;       
 
-    //BatteryVoltage = map(batteryLevel,0,710,0,100);
-    //BatteryVoltage = BatteryVoltage * 4.2/100*0.905;  // try to get the correct voltage, as voltage divider is a mess + multiply by 0.78
-    BatteryVoltage = map(batteryLevel,0,7100,0,100);
-    BatteryVoltage = BatteryVoltage * 4.2/100;
-
-    /*increase sleep time in case battery voltage is low */
-    if(BatteryVoltage < 3.9)
-      increase_sleep_at_low_voltage_factor = 2;
-      
-    if(BatteryVoltage < 3.7)
-      increase_sleep_at_low_voltage_factor = 3;
-      
-    if(BatteryVoltage < 3.5)
-      increase_sleep_at_low_voltage_factor = 4;       
-
-
-    char tempString[8];
-    dtostrf(BatteryVoltage, 1, 2, tempString);
-
-    /*strncpy(topic,topic_root,sizeof(topic_root));
-    strncat(topic, "ds18b20_0_voltage",sizeof("ds18b20_0_voltage")); */   
-    mqttClient.publish("esp/sensor/ds18b20_0_voltage", tempString);
+      if(BatteryVoltage < 3.3 && BatteryVoltage > 0) 
+        increase_sleep_at_low_voltage_factor = 6;  
+    
+    }else{
+      mqttClient.publish("esp/sensor/ds18b20_0_voltage_read_error", "true");  
+    }
+    
     /* Wait a little bit to make sure publish is finished*/
     delay(3000);
     Serial.println("Done - activating deepsleep mode");
