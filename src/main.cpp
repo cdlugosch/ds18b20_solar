@@ -9,6 +9,7 @@ float batteryLevel    = 0.0;
 # define sensor_pin 5
 # define analog_voltage_pin 35
 
+char topic[100]; /* mqtt publish topic - string concat in c is a mess */
 
 #define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
 uint64_t Time_to_sleep = 300;   /* Time ESP32 will go to sleep (in seconds) */
@@ -36,9 +37,8 @@ float get_ds18b20_Temp()
 
   if(CountSensors>0){
     owSensors.requestTemperatures(); // Send the command to get temperatures
-    //delay(500);
 
-    while((index<5) && ((starttime +10000)>millis())){
+    while((index<50) && ((starttime +10000)>millis())){
       temperature = owSensors.getTempCByIndex(0);
       /* sometimes the returned value is approx 85 or -127 - maybe the sensor is not fast enough */
       if(temperature>-20 && temperature<70){
@@ -86,9 +86,11 @@ void setup()
     char ds18b20_tempString[8];
     dtostrf(get_ds18b20_Temp(), 1, 2, ds18b20_tempString);
     Serial.print("Temperature for the device 1 (index 0) is: ");
-    Serial.println(ds18b20_tempString);  
+    Serial.println(ds18b20_tempString); 
+    /*strncpy(topic,topic_root,sizeof(topic_root));
+    strncat(topic, "ds18b20_0",sizeof("ds18b20_0"));*/
     mqttClient.publish("esp/sensor/ds18b20_0", ds18b20_tempString);
-
+ 
     Serial.println("de-activate sensor to save battery ");
     digitalWrite(sensor_pin, LOW);
 
@@ -113,8 +115,10 @@ void setup()
 
     char tempString[8];
     dtostrf(BatteryVoltage, 1, 2, tempString);
-    mqttClient.publish("esp/sensor/ds18b20_0_voltage", tempString);
 
+    /*strncpy(topic,topic_root,sizeof(topic_root));
+    strncat(topic, "ds18b20_0_voltage",sizeof("ds18b20_0_voltage")); */   
+    mqttClient.publish("esp/sensor/ds18b20_0_voltage", tempString);
     /* Wait a little bit to make sure publish is finished*/
     delay(3000);
     Serial.println("Done - activating deepsleep mode");

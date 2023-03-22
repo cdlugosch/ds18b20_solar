@@ -67,7 +67,7 @@ void connectNetwork(){
     while ((!mqttClient.connected()) && (network_iteration_index < max_network_iteration)) {
         Serial.println("Connecting to MQTT...");
    
-        if (mqttClient.connect(mqtt_ClientName, mqtt_user, mqtt_password )) {
+        if (mqttClient.connect(mqtt_ClientName, NULL, NULL )) {
    
           Serial.println("MQTT connected");  
           network_iteration_index+=max_network_iteration;
